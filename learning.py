@@ -78,7 +78,7 @@ for oiu in range(1,30):
                                           1,0,1,0)
                            ) 
         
-        train_povoseg_model.fit(DataLoader.Dataset(train_data,xyDim, times=2, group_size=5, random=True).cache(f"{dataset_path}/cached_training_data/{oiu}t2g5").batch(80).prefetch(20).map(totuplething),
+        train_povoseg_model.fit(DataLoader.Dataset(train_data,xyDim, times=2, group_size=5, random=True).batch(80).prefetch(20).map(totuplething),
                         epochs=2,
                         verbose=1,
                         workers=8,
@@ -86,7 +86,7 @@ for oiu in range(1,30):
                         use_multiprocessing=True)
         train_povoseg_model.save_weights(f'{dataset_path}/saved_weights/new_{oiu}_train_povoseg_2e')
 
-        train_model.fit(DataLoader.Dataset(train_data,xyDim, times=2, group_size=5, random=True).cache(f"{dataset_path}/cached_training_data/{oiu}t2g5").batch(40).prefetch(20).map(totuplething),
+        train_model.fit(DataLoader.Dataset(train_data,xyDim, times=2, group_size=5, random=True).batch(40).prefetch(20).map(totuplething),
                                 epochs=10,
                                 verbose=1,
                                 workers=8,
