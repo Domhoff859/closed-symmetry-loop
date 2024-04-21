@@ -1,6 +1,6 @@
-from tensorflow.keras.layers import Conv2D, Concatenate, UpSampling2D, Reshape, Lambda
+from keras.layers import Conv2D, Concatenate, UpSampling2D, Reshape, Lambda
 from network.augmentations import ContrastNoise, ContrastNoiseSingle, GaussianNoise, BrightnessNoise
-from tensorflow.image import rgb_to_grayscale
+from tensorflow.python.ops.image_ops import rgb_to_grayscale
 
 def dense_block(x, channels, iterations):
     for i in range(iterations):

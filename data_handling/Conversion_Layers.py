@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.layers import Lambda, Multiply
+from keras.layers import Lambda, Multiply
 
 from utils import generate_px_coordinates
 

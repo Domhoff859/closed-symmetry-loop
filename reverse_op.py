@@ -285,7 +285,7 @@ class PODestarisation(tf.keras.layers.Layer):
         if self.model_info["symmetries_continuous"]:
             print("generate ref samples for continuous symmetries around z")
             
-            ref_vo, ref_po = make_ref_outof_samples_continues(tf.constant([0,0,1],tf.float32))
+            ref_vo, ref_po = make_ref_outof_samples_symmetrical(tf.constant([0,0,1],tf.float32))
 
         elif isclose(self.model_info["symmetries_discrete"][0][2,2], 1, abs_tol=1e-3):
             factor = len(self.model_info["symmetries_discrete"])+1
