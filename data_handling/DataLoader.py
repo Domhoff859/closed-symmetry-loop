@@ -1,5 +1,7 @@
 import json
 import os
+import logging
+
 import numpy as np
 from pathlib import Path
 from PIL import Image
@@ -8,7 +10,9 @@ from tqdm import tqdm
 
 import torchvision.transforms as transforms
 
-def open_annotator(name):
+logger = logging.getLogger('DataLoader')
+
+def open_annotator(name: str) -> dict:
     """
     Opens and reads a JSON file.
 
@@ -23,7 +27,7 @@ def open_annotator(name):
     with open(name) as f:
         return json.load(f)
 
-def load_gt_data(root_dirs, oiu):
+def load_gt_data(root_dirs: list, oiu: int) -> list:
     """
     Loads ground truth data from multiple directories.
 
@@ -40,7 +44,7 @@ def load_gt_data(root_dirs, oiu):
         for root, sub_dirs, files in os.walk(rd):
             for sd in tqdm(sub_dirs):
                 dir = f'{root}/{sd}'
-                print(dir)
+                logger.debug(dir)
                 scene_gt = open_annotator(f'{dir}/scene_gt.json')
                 scene_gt_info = open_annotator(f'{dir}/scene_gt_info.json')
                 scene_camera = open_annotator(f'{dir}/scene_camera.json')
@@ -72,7 +76,7 @@ def load_gt_data(root_dirs, oiu):
             break
     return found_data
 
-def load_foreign_data(root_dirs, foreign_info, oiu):
+def load_foreign_data(root_dirs: list, foreign_info: str, oiu: int) -> list:
     """
     Loads foreign data from multiple directories.
 
@@ -120,7 +124,7 @@ def load_foreign_data(root_dirs, foreign_info, oiu):
     return found_data
 
 
-def load_data_item(datum, test_mode=False):
+def load_data_item(datum: dict, test_mode: bool = False) -> tuple:
     """
     Loads a single data item.
 
@@ -141,7 +145,7 @@ def load_data_item(datum, test_mode=False):
     seg = np.array(Image.open(f'{datum["root"]}/mask_visib/{datum["file_name"]}_{datum["oi_name"]}.png'))
     return img, depthimg, seg, datum["cam_K"], datum["cam_R_m2c"], datum["cam_t_m2c"], datum['bbox_start'], datum['bbox_dims']
 
-def extract_item(datum, xyDim, sigma=0.2, test_mode=False):
+def extract_item(datum: tuple, xyDim: int, sigma: float = 0.2, test_mode: bool = False) -> tuple:
     """
     Extracts an item from the data.
 
@@ -185,7 +189,7 @@ def extract_item(datum, xyDim, sigma=0.2, test_mode=False):
         return transformed_img, transformed_depth, transformed_seg, cam_K, R, t, coord_K
     
 class CustomDataset(Dataset):
-    def __init__(self, data_, xyDim, times=1, group_size=1, random=False, sigma=0.2, test_mode=False):
+    def __init__(self, data_: list, xyDim: int, times: int = 1, group_size: int = 1, random: bool = False, sigma: float = 0.2, test_mode: bool = False):
         """
         Custom dataset class.
 

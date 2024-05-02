@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def create_Dataset_conversion_layers(xDim, yDim, model_info, strides=1):
+def create_Dataset_conversion_layers(xDim: int, yDim: int, model_info: dict, strides: int = 1) -> nn.Module:
     """
     Creates a dataset conversion layers model.
 
@@ -21,15 +21,15 @@ def create_Dataset_conversion_layers(xDim, yDim, model_info, strides=1):
     class ConversionLayers(nn.Module):
         def __init__(self):
             super(ConversionLayers, self).__init__()
-            self.rgb = nn.Identity()
-            self.depth = nn.Identity()
-            self.segmentation = nn.Identity()
-            self.camera_matrix = nn.Identity()
-            self.coord_offset = nn.Identity()
-            self.rotation_matrix = nn.Identity()
-            self.translation = nn.Identity()
+            self.rgb = nn.Identity(shape=(yDim, xDim, 3))
+            self.depth = nn.Identity(shape=(yDim, xDim,))
+            self.segmentation = nn.Identity(shape=(yDim, xDim,), dtype=torch.int32)
+            self.camera_matrix = nn.Identity(shape=(3, 3,))
+            self.coord_offset = nn.Identity(shape=(2,2,))
+            self.rotation_matrix = nn.Identity(shape=(3,3,))
+            self.translation = nn.Identity(shape=(3,))
 
-        def forward(self, x):
+        def forward(self, x: dict) -> tuple:
             """
             Forward pass of the conversion layers model.
 
@@ -43,7 +43,7 @@ def create_Dataset_conversion_layers(xDim, yDim, model_info, strides=1):
             segmentations = x['segmentation'][:, ::strides, ::strides]
             segmentations = torch.unsqueeze(segmentations > 0, dim=-1).float()
 
-            def depth_based_cam_coords(var):
+            def depth_based_cam_coords(var: tuple) -> torch.Tensor:
                 depth, cam_K, coord_K = var
                 u, v = generate_px_coordinates(depth.shape[1:3], coord_K, strides)
                 scaled_coords = torch.stack([u * depth, v * depth, depth], dim=-1)
@@ -51,13 +51,13 @@ def create_Dataset_conversion_layers(xDim, yDim, model_info, strides=1):
 
             cam_coords = depth_based_cam_coords((depth, x['camera_matrix'], x['coord_offset']))
 
-            def cam_to_obj(var):
+            def cam_to_obj(var: tuple) -> torch.Tensor:
                 R, t, cam_coords = var
                 return torch.einsum('bji,byxj->byxi', R, cam_coords - t[:, None, None])
 
             obj_image = cam_to_obj((x['rotation_matrix'], x['translation'], cam_coords))
             
-            def obj_validity(obj_image):
+            def obj_validity(obj_image: torch.Tensor) -> torch.Tensor:
                 obj_mins = torch.tensor(model_info['mins'], dtype=torch.float32) * 1.1
                 obj_maxs = torch.tensor(model_info['maxs'], dtype=torch.float32) * 1.1
 

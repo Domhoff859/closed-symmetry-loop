@@ -1,12 +1,13 @@
 import torch
 from network.augmentations import *
+import numpy as np
+
+from typing import Tuple
 
 import torch.nn as nn
 import torch.nn.functional as F
 
-
-
-def dense_block(x, channels, iterations):
+def dense_block(x: torch.Tensor, channels: int, iterations: int) -> torch.Tensor:
     """
     A helper function that implements a dense block.
 
@@ -25,8 +26,7 @@ def dense_block(x, channels, iterations):
         x = torch.cat([x, x1], dim=1)
     return nn.Conv2d(channels * 2, channels * 2, kernel_size=1, padding='same')(x)
 
-
-def rgb255_to_obj_net(rgb):
+def rgb255_to_obj_net(rgb: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Converts an RGB image to object network outputs.
 
@@ -68,7 +68,7 @@ def rgb255_to_obj_net(rgb):
     x = nn.Conv2d(64, 128, kernel_size=5, stride=2, padding='same')(x)
     x = dense_block(x, 128, 12)
 
-    def up_path(x):
+    def up_path(x: torch.Tensor) -> torch.Tensor:
         """
         Implements the up path of the network.
 

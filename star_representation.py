@@ -41,7 +41,7 @@ class StarRepresentation(torch.nn.Module):
         
         self.model_info = model_info
         
-    def call(self, po: torch.Tensor) -> torch.Tensor:
+    def forward(self, po: torch.Tensor) -> torch.Tensor:
         """
         Applies the star representation to the input object.
 
