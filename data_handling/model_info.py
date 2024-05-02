@@ -1,7 +1,22 @@
-import json
 import numpy as np
+import json
 
 def load_model_info(dataset_path, oiu, verbose=1):
+    """
+    Load model information from a JSON file.
+
+    Parameters:
+    - dataset_path (str): The path to the dataset.
+    - oiu (int): The object identifier.
+    - verbose (int, optional): Verbosity level. Default is 1.
+
+    Returns:
+    - model_info (dict): A dictionary containing the loaded model information.
+
+    Raises:
+    - AssertionError: If the object identifier is not found in the JSON data.
+
+    """
     model_info = {}
     with open(f'{dataset_path}/models_eval/models_info.json') as f:
         jsondata = json.load(f)

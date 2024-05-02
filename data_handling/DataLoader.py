@@ -1,19 +1,39 @@
-import json, os
+import json
+import os
 import numpy as np
 from pathlib import Path
 from PIL import Image
-import tensorflow as tf
-import tensorflow_addons as tfa
+from torch.utils.data import Dataset
 from tqdm import tqdm
 
+import torchvision.transforms as transforms
+
 def open_annotator(name):
+    """
+    Opens and reads a JSON file.
+
+    Args:
+        name (str): The path to the JSON file.
+
+    Returns:
+        dict: The contents of the JSON file.
+    """
     assert(Path(name).is_file())
     
     with open(name) as f:
         return json.load(f)
 
-# build a list with data for all occurencies of that object 
 def load_gt_data(root_dirs, oiu):
+    """
+    Loads ground truth data from multiple directories.
+
+    Args:
+        root_dirs (list): A list of root directories.
+        oiu (int): The object ID to filter the data.
+
+    Returns:
+        list: A list of dictionaries containing the loaded data.
+    """
     found_data = []
     
     for rd in root_dirs:
@@ -40,7 +60,7 @@ def load_gt_data(root_dirs, oiu):
                             new_data['cam_t_m2c'] = np.array(v["cam_t_m2c"])
                             
                             bbox_obj = scene_gt_info[key][vi]["bbox_obj"]
-                            new_data['bbox_start'] =np.array(bbox_obj[:2])
+                            new_data['bbox_start'] = np.array(bbox_obj[:2])
                             new_data['bbox_dims'] = np.array(bbox_obj[2:])
                             
                             new_data['cam_K'] = np.array(scene_camera[key]["cam_K"]).reshape((3,3))
@@ -53,6 +73,17 @@ def load_gt_data(root_dirs, oiu):
     return found_data
 
 def load_foreign_data(root_dirs, foreign_info, oiu):
+    """
+    Loads foreign data from multiple directories.
+
+    Args:
+        root_dirs (list): A list of root directories.
+        foreign_info (str): The name of the foreign info file.
+        oiu (int): The object ID to filter the data.
+
+    Returns:
+        list: A list of dictionaries containing the loaded data.
+    """
     found_data = []
     
     for rd in root_dirs:
@@ -75,9 +106,8 @@ def load_foreign_data(root_dirs, foreign_info, oiu):
                             new_data['oi_name'] = "{:06d}".format(vi)
                                                         
                             bbox_obj = np.array(v["bbox_obj"]).astype(float)
-                            new_data['bbox_start'] =bbox_obj[:2]
+                            new_data['bbox_start'] = bbox_obj[:2]
                             new_data['bbox_dims'] = bbox_obj[2:] - bbox_obj[:2]
-#                             new_data['bbox_dims'] = np.array(bbox_obj[2:])
                             
                             new_data['cam_K'] = np.array(scene_camera[key]["cam_K"]).reshape((3,3))
                             new_data['depth_scale'] = scene_camera[key]["depth_scale"]
@@ -91,6 +121,16 @@ def load_foreign_data(root_dirs, foreign_info, oiu):
 
 
 def load_data_item(datum, test_mode=False):
+    """
+    Loads a single data item.
+
+    Args:
+        datum (dict): The data dictionary.
+        test_mode (bool, optional): Whether to load data for testing. Defaults to False.
+
+    Returns:
+        tuple: A tuple containing the loaded data.
+    """
     img = np.array(Image.open(f'{datum["root"]}/rgb/{datum["file_name"]}{".png" if "primesense" in datum["root"] else ".jpg"}'))
     depthimg = np.array(Image.open(f'{datum["root"]}/depth/{datum["file_name"]}.png'), np.float32)
     depthimg *= datum["depth_scale"]
@@ -102,6 +142,18 @@ def load_data_item(datum, test_mode=False):
     return img, depthimg, seg, datum["cam_K"], datum["cam_R_m2c"], datum["cam_t_m2c"], datum['bbox_start'], datum['bbox_dims']
 
 def extract_item(datum, xyDim, sigma=0.2, test_mode=False):
+    """
+    Extracts an item from the data.
+
+    Args:
+        datum (tuple): The data tuple.
+        xyDim (int): The dimension of the item.
+        sigma (float, optional): The sigma value for random scaling. Defaults to 0.2.
+        test_mode (bool, optional): Whether to extract item for testing. Defaults to False.
+
+    Returns:
+        tuple: A tuple containing the extracted item.
+    """
     if test_mode:
         img, depth, cam_K, bbs, bbd = datum
         
@@ -117,39 +169,45 @@ def extract_item(datum, xyDim, sigma=0.2, test_mode=False):
     transformation = [scale, 0, new_bbs[0], 0.0, scale,  new_bbs[1], 0.0, 0.0]
     coord_K = np.stack([np.array([scale,scale]), new_bbs])
     
-    transformed_img = tfa.image.transform(img, transformation, interpolation='bilinear', output_shape=(xyDim,xyDim))
-    transformed_depth = tfa.image.transform(depth, transformation, interpolation='bilinear', output_shape=(xyDim,xyDim))
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((xyDim, xyDim)),
+        transforms.ToTensor()
+    ])
+    
+    transformed_img = transform(img)
+    transformed_depth = transform(depth)
     
     if test_mode:
         return transformed_img, transformed_depth, cam_K, coord_K
     else:
-        transformed_seg = tfa.image.transform(seg, transformation, interpolation='bilinear', output_shape=(xyDim,xyDim))
+        transformed_seg = transform(seg)
         return transformed_img, transformed_depth, transformed_seg, cam_K, R, t, coord_K
     
-def batch_data(datum, xyDim, batch_size = 5, sigma=0.2, test_mode=False):
-    ld = load_data_item(datum, test_mode=test_mode)
-    
-    all_d = []
-    for _ in range(batch_size):
-        all_d.append(extract_item(ld, xyDim, sigma=sigma, test_mode=test_mode))
-        
-    return all_d    
+class CustomDataset(Dataset):
+    def __init__(self, data_, xyDim, times=1, group_size=1, random=False, sigma=0.2, test_mode=False):
+        """
+        Custom dataset class.
 
-def Dataset(data_, xyDim, times=1, group_size=1, random=False, sigma=0.2, test_mode=False):
+        Args:
+            data_ (list): The data list.
+            xyDim (int): The dimension of the item.
+            times (int, optional): The number of times to repeat the data. Defaults to 1.
+            group_size (int, optional): The group size. Defaults to 1.
+            random (bool, optional): Whether to use random data. Defaults to False.
+            sigma (float, optional): The sigma value for random scaling. Defaults to 0.2.
+            test_mode (bool, optional): Whether to use test mode. Defaults to False.
+        """
+        self.data = data_ * times
+        self.xyDim = xyDim
+        self.group_size = group_size
+        self.random = random
+        self.sigma = sigma
+        self.test_mode = test_mode
+        
+    def __len__(self):
+        return len(self.data) * self.group_size
     
-    def gen():
-        data = data_ * times
-        if random:
-            from random import sample
-            data = sample(data, k = len(data))
-        for d in data:
-            all_d = batch_data(d, xyDim, batch_size=group_size, sigma=sigma, test_mode=test_mode)
-            for elem in all_d:
-                yield elem
-#             yield extract_item(load_data_item(d))
-    
-    return tf.data.Dataset.from_generator(
-        gen,
-        tuple([_.dtype for _ in next(gen())]),
-        tuple([tf.TensorShape(_.shape) for _ in next(gen())])
-        )
+    def __getitem__(self, idx):
+        d = self.data[idx // self.group_size]
+        return extract_item(load_data_item(d, test_mode=self.test_mode), self.xyDim, sigma=self.sigma, test_mode=self.test_mode)

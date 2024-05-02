@@ -1,98 +1,128 @@
-import tensorflow as tf
+import torch
 
-class GaussianNoise(tf.keras.layers.Layer):
-    def __init__(self, stddev, **kwargs):
-        super(GaussianNoise, self).__init__(**kwargs)
-        self.supports_masking = True
+import torch.nn as nn
+import torch.nn.functional as F
+
+class GaussianNoise(nn.Module):
+    """
+    Adds Gaussian noise to the input tensor during training.
+
+    Args:
+        stddev (float): Standard deviation of the Gaussian noise.
+
+    Returns:
+        torch.Tensor: Tensor with added Gaussian noise.
+    """
+    def __init__(self, stddev):
+        super(GaussianNoise, self).__init__()
         self.stddev = stddev
         
-    def call(self, inputs, training=None):
-        def noised():
-            return tf.clip_by_value(
-                inputs + tf.random.normal(shape=tf.shape(inputs),
-                                            mean=0.,
-                                            stddev=self.stddev),
-                0.,
-                255.
-            )
-        
-        return tf.keras.backend.in_train_phase(noised, inputs, training=training)
+    def forward(self, inputs):
+        """
+        Forward pass of the GaussianNoise module.
+
+        Args:
+            inputs (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Tensor with added Gaussian noise.
+        """
+        if self.training:
+            noise = torch.randn_like(inputs) * self.stddev
+            return torch.clamp(inputs + noise, 0., 255.)
+        else:
+            return inputs
     
-    def get_config(self):
-        config = {'stddev': self.stddev}
-        base_config = super(GaussianNoise, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-    
-    def compute_output_shape(self, input_shape):
-        return input_shape
-    
-class ContrastNoiseSingle(tf.keras.layers.Layer):
-    def __init__(self, stddev, **kwargs):
-        super(ContrastNoiseSingle, self).__init__(**kwargs)
-        self.supports_masking = True
+class ContrastNoiseSingle(nn.Module):
+    """
+    Adds contrast noise to each channel of the input tensor during training.
+
+    Args:
+        stddev (float): Standard deviation of the contrast noise.
+
+    Returns:
+        torch.Tensor: Tensor with added contrast noise.
+    """
+    def __init__(self, stddev):
+        super(ContrastNoiseSingle, self).__init__()
         self.stddev = stddev
         
-    def call(self, inputs, training=None):
-        def noised():
-            return tf.concat([
-                tf.image.random_contrast(inputs[:,:,:,0:1], 1.-self.stddev, 1.+self.stddev),
-                tf.image.random_contrast(inputs[:,:,:,1:2], 1.-self.stddev, 1.+self.stddev),
-                tf.image.random_contrast(inputs[:,:,:,2:3], 1.-self.stddev, 1.+self.stddev)]
-                ,axis=-1)
-        
-        return tf.keras.backend.in_train_phase(noised, inputs, training=training)
+    def forward(self, inputs):
+        """
+        Forward pass of the ContrastNoiseSingle module.
+
+        Args:
+            inputs (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Tensor with added contrast noise.
+        """
+        if self.training:
+            noise = torch.empty_like(inputs)
+            for i in range(inputs.size(0)):
+                noise[i, :, :, 0] = torch.clamp(torch.randn_like(inputs[i, :, :, 0]) * self.stddev, -self.stddev, self.stddev)
+                noise[i, :, :, 1] = torch.clamp(torch.randn_like(inputs[i, :, :, 1]) * self.stddev, -self.stddev, self.stddev)
+                noise[i, :, :, 2] = torch.clamp(torch.randn_like(inputs[i, :, :, 2]) * self.stddev, -self.stddev, self.stddev)
+            return torch.cat([inputs[:, :, :, 0:1] + noise[:, :, :, 0:1],
+                              inputs[:, :, :, 1:2] + noise[:, :, :, 1:2],
+                              inputs[:, :, :, 2:3] + noise[:, :, :, 2:3]], dim=-1)
+        else:
+            return inputs
     
-    def get_config(self):
-        config = {'stddev': self.stddev}
-        base_config = super(ContrastNoiseSingle, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-    
-    def compute_output_shape(self, input_shape):
-        return input_shape
-    
-class ContrastNoise(tf.keras.layers.Layer):
-    def __init__(self, stddev, **kwargs):
-        super(ContrastNoise, self).__init__(**kwargs)
-        self.supports_masking = True
+class ContrastNoise(nn.Module):
+    """
+    Adds contrast noise to the input tensor during training.
+
+    Args:
+        stddev (float): Standard deviation of the contrast noise.
+
+    Returns:
+        torch.Tensor: Tensor with added contrast noise.
+    """
+    def __init__(self, stddev):
+        super(ContrastNoise, self).__init__()
         self.stddev = stddev
         
-    def call(self, inputs, training=None):
-        def noised():
-            return  tf.image.random_contrast(inputs, 1.-self.stddev, 1.+self.stddev)
-        
-        return tf.keras.backend.in_train_phase(noised, inputs, training=training)
+    def forward(self, inputs):
+        """
+        Forward pass of the ContrastNoise module.
+
+        Args:
+            inputs (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Tensor with added contrast noise.
+        """
+        if self.training:
+            return torch.clamp(inputs + torch.randn_like(inputs) * self.stddev, 0., 255.)
+        else:
+            return inputs
     
-    def build(self, input_shape):
-        super(ContrastNoise, self).build(input_shape)
-        
-    def get_config(self):
-        config = {'stddev': self.stddev}
-        base_config = super(ContrastNoise, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-    
-    def compute_output_shape(self, input_shape):
-        return input_shape
-    
-class BrightnessNoise(tf.keras.layers.Layer):
-    def __init__(self, stddev, **kwargs):
-        super(BrightnessNoise, self).__init__(**kwargs)
-        self.supports_masking = True
+class BrightnessNoise(nn.Module):
+    """
+    Adds brightness noise to the input tensor during training.
+
+    Args:
+        stddev (float): Standard deviation of the brightness noise.
+
+    Returns:
+        torch.Tensor: Tensor with added brightness noise.
+    """
+    def __init__(self, stddev):
+        super(BrightnessNoise, self).__init__()
         self.stddev = stddev
         
-    def call(self, inputs, training=None):
-        def noised():
-            return tf.clip_by_value(
-                tf.image.random_brightness(inputs,self.stddev),
-                0.,
-                255.
-            )
-        
-        return tf.keras.backend.in_train_phase(noised, inputs, training=training)
-    
-    def get_config(self):
-        config = {'stddev': self.stddev}
-        base_config = super(BrightnessNoise, self).get_config()
-        return dict(list(base_config.items()) + list(config.items()))
-    
-    def compute_output_shape(self, input_shape):
-        return input_shape
+    def forward(self, inputs):
+        """
+        Forward pass of the BrightnessNoise module.
+
+        Args:
+            inputs (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Tensor with added brightness noise.
+        """
+        if self.training:
+            return torch.clamp(inputs + torch.randn_like(inputs) * self.stddev, 0., 255.)
+        else:
+            return inputs

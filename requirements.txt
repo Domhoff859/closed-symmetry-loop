@@ -1,5 +1,5 @@
-tensorflow==2.15.1
-tensorflow-addons
+torch
+torchvision
 pillow
 tqdm
 pyyaml
