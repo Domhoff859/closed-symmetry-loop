@@ -1,5 +1,6 @@
 from data_handling.model_info import load_model_info
-from data_handling import DataLoader, Conversion_Layers
+from data_handling import DataLoader
+from data_handling.Conversion_Layers import ConversionLayers
 from network import loss, cnn_definition_paper
 from star_representation import StarRepresentation
 from dash_repesentation import RemoveCameraEffect, DashRepresentation
@@ -49,7 +50,7 @@ for oiu in range(1,2):
     logger.info(f'Found train data for {len(train_data)} occurencies of object {oiu}, where {len([d for d in train_data if "primesense" in d["root"]])} origined from primesense.')
     
     # Create the inputs and valid_po tensors
-    inputs, valid_po, isvalid, depth, segmentation = Conversion_Layers.create_Dataset_conversion_layers(xyDim, xyDim, model_info, strides)
+    conversion_layers = ConversionLayers(xyDim, xyDim, model_info, strides)
 
     # # Create the valid_dash and valid_po_star tensors
     # valid_dash = DashRepresentation(model_info["symmetries_discrete"][0][:3,-1] / 2. if len(model_info["symmetries_discrete"]) > 0 else 0 )(inputs['roation_matrix'], valid_po)
