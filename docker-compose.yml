@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - /home/domin/Documents/GitHub/closed-symmetry-loop:/tf/notebooks
+      - /home/domin/Documents/Datasets/tless:/tf/notebooks/datasets/tless
     ports:
       - 8888:8888
     container_name: robot_vision24
