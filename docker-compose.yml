@@ -1,0 +1,10 @@
+services:
+  closed-symmetry-loop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /home/domin/Documents/GitHub/closed-symmetry-loop:/tf/notebooks
+    ports:
+      - 8888:8888
+    container_name: robot_vision24
