@@ -31,7 +31,7 @@ To build and run the Docker container for the "closed-symmetry-loop" project, fo
 
 3. Once the image is built, you can run the container with the following command:
    ```bash
-   sudo docker run -it --rm -v /home/domin/Documents/GitHub/closed-symmetry-loop/learning.ipynb:/tf/notebooks -p 8888:8888 --name robot_vision24 closed-symmetry-loop
+   sudo docker run -it --rm --gpus all -v /home/domin/Documents/GitHub/closed-symmetry-loop/learning.ipynb:/tf/notebooks -p 8888:8888 --name robot_vision24 closed-symmetry-loop
    ```
 
 Alternatively, you can use the `docker-compose.yml` file to simplify the process:
