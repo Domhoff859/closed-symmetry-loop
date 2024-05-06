@@ -3,3 +3,6 @@ tensorflow-addons
 pillow
 tqdm
 pyyaml
+nbimporter
+scipy
+pytest
