@@ -137,4 +137,3 @@ class Seg_Loss(tf.keras.layers.Layer):
                 1. - tf.reduce_mean(tf.abs(labels - tf.cast(sigmoid > 0.5, sigmoid.dtype))), #percent
                 1. - tf.reduce_sum(labels * tf.abs(labels -  tf.cast(sigmoid > 0.5, sigmoid.dtype))) / (epsilon + tf.reduce_sum(labels)) #fg_percent
                )
-

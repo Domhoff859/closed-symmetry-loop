@@ -20,7 +20,7 @@ def load_gt_data(root_dirs, oiu):
         for root, sub_dirs, files in os.walk(rd):
             for sd in tqdm(sub_dirs):
                 dir = f'{root}/{sd}'
-                print(dir)
+                
                 scene_gt = open_annotator(f'{dir}/scene_gt.json')
                 scene_gt_info = open_annotator(f'{dir}/scene_gt_info.json')
                 scene_camera = open_annotator(f'{dir}/scene_camera.json')
@@ -97,7 +97,7 @@ def load_data_item(datum, test_mode=False):
 
     if test_mode:
         return img, depthimg, datum["cam_K"], datum['bbox_start'], datum['bbox_dims']
-    
+        
     seg = np.array(Image.open(f'{datum["root"]}/mask_visib/{datum["file_name"]}_{datum["oi_name"]}.png'))
     return img, depthimg, seg, datum["cam_K"], datum["cam_R_m2c"], datum["cam_t_m2c"], datum['bbox_start'], datum['bbox_dims']
 
