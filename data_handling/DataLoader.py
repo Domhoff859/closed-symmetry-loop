@@ -59,32 +59,32 @@ def load_foreign_data(root_dirs, foreign_info, oiu):
         for root, sub_dirs, files in os.walk(rd):
             for sd in tqdm(sub_dirs):
                 dir = f'{root}/{sd}'
-                
+                print(f'{dir}/{foreign_info}')
                 scene_foreign_info = open_annotator(f'{dir}/{foreign_info}')
                 scene_camera = open_annotator(f'{dir}/scene_camera.json')
+
+                # assert(len(scene_foreign_info) == len(scene_camera))
                 
-                assert(len(scene_foreign_info) == len(scene_camera))
-                
-                for key, foreign_values in scene_foreign_info.items():
-                    for vi, v in enumerate(foreign_values):
-                        if v["obj_id"] == oiu and v["score"] > 0.0:
-                            
-                            new_data = {}
-                            new_data['root'] = dir
-                            new_data['file_name'] = "{:06d}".format(int(key))
-                            new_data['oi_name'] = "{:06d}".format(vi)
-                                                        
-                            bbox_obj = np.array(v["bbox_obj"]).astype(float)
-                            new_data['bbox_start'] =bbox_obj[:2]
-                            new_data['bbox_dims'] = bbox_obj[2:] - bbox_obj[:2]
+                # for key, foreign_values in scene_foreign_info.items():
+                for vi, v in enumerate(scene_foreign_info):
+                    if v["category_id"] == oiu and v["score"] > 0.0:
+                        
+                        new_data = {}
+                        new_data['root'] = dir
+                        new_data['file_name'] = "{:06d}".format(int(v['scene_id']))
+                        new_data['oi_name'] = "{:06d}".format(v['image_id'])
+                                                    
+                        bbox_obj = np.array(v["bbox"]).astype(float)
+                        new_data['bbox_start'] =bbox_obj[:2]
+                        new_data['bbox_dims'] = bbox_obj[2:] - bbox_obj[:2]
 #                             new_data['bbox_dims'] = np.array(bbox_obj[2:])
-                            
-                            new_data['cam_K'] = np.array(scene_camera[key]["cam_K"]).reshape((3,3))
-                            new_data['depth_scale'] = scene_camera[key]["depth_scale"]
-                            
-                            new_data['score'] = v["score"]
-                                                        
-                            found_data.append(new_data)
+                        
+                        new_data['cam_K'] = np.array(scene_camera[str(v['scene_id'])]["cam_K"]).reshape((3,3))
+                        new_data['depth_scale'] = scene_camera[str(v['scene_id'])]["depth_scale"]
+                        
+                        new_data['score'] = v["score"]
+                                                    
+                        found_data.append(new_data)
             break
             
     return found_data
@@ -146,7 +146,6 @@ def Dataset(data_, xyDim, times=1, group_size=1, random=False, sigma=0.2, test_m
             all_d = batch_data(d, xyDim, batch_size=group_size, sigma=sigma, test_mode=test_mode)
             for elem in all_d:
                 yield elem
-#             yield extract_item(load_data_item(d))
     
     return tf.data.Dataset.from_generator(
         gen,
