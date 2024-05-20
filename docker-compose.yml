@@ -7,7 +7,6 @@ services:
     volumes:
       - /home/domin/Documents/GitHub/closed-symmetry-loop:/tf/notebooks
       - /home/domin/Documents/Datasets/tless:/tf/notebooks/datasets/tless
-      - /home/domin/Documents/Datasets/closed-symmetry-loop:/tf/notebooks/datasets/closed-symmetry-loop
     ports:
       - 8888:8888
     deploy:
