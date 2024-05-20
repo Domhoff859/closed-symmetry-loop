@@ -117,13 +117,13 @@ def extract_item(datum, xyDim, sigma=0.2, test_mode=False):
     transformation = [scale, 0, new_bbs[0], 0.0, scale,  new_bbs[1], 0.0, 0.0]
     coord_K = np.stack([np.array([scale,scale]), new_bbs])
     
-    transformed_img = tfa.image.transform(img, transformation, interpolation='bilinear', output_shape=(xyDim,xyDim))
-    transformed_depth = tfa.image.transform(depth, transformation, interpolation='bilinear', output_shape=(xyDim,xyDim))
+    transformed_img = tfa.image.transform(img, transformation, interpolation='bilinear', output_shape=tf.constant([xyDim,xyDim]))
+    transformed_depth = tfa.image.transform(depth, transformation, interpolation='bilinear', output_shape=tf.constant([xyDim,xyDim]))
     
     if test_mode:
         return transformed_img, transformed_depth, cam_K, coord_K
     else:
-        transformed_seg = tfa.image.transform(seg, transformation, interpolation='bilinear', output_shape=(xyDim,xyDim))
+        transformed_seg = tfa.image.transform(seg, transformation, interpolation='bilinear', output_shape=tf.constant([xyDim,xyDim]))
         return transformed_img, transformed_depth, transformed_seg, cam_K, R, t, coord_K
     
 def batch_data(datum, xyDim, batch_size = 5, sigma=0.2, test_mode=False):
