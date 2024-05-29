@@ -1,5 +1,4 @@
-tensorflow==2.15.1
-tensorflow-addons
-pillow
+tensorflow-addons==0.15.0
 tqdm
-pyyaml
+pillow
+lycon
